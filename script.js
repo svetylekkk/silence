@@ -6,6 +6,7 @@
   var DESIGN_W = 1440; // ширина макета; на телефоне — 390
   var mobile = false;
   var unit = 1;   // сколько единиц getBoundingClientRect приходится на 1 css-px макета
+  var pageZoom = 1; // во сколько раз увеличена страница (для курсора)
   var vh = 900;   // высота окна в px макета
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -20,6 +21,7 @@
     DESIGN_W = mobile ? 390 : 1440;
     root.classList.toggle('m', mobile);
     var zoom = w / DESIGN_W;
+    pageZoom = zoom;
     root.style.zoom = zoom;
     vh = window.innerHeight / zoom;
     root.style.setProperty('--vh', vh + 'px');
@@ -65,7 +67,9 @@
       img.data[i + 3] = Math.random() * 0.24 * 255;
     }
     ctx.putImageData(img, 0, 0);
-    document.getElementById('grain').style.backgroundImage = 'url(' + c.toDataURL('image/png') + ')';
+    var grainUrl = 'url(' + c.toDataURL('image/png') + ')';
+    document.getElementById('grain').style.backgroundImage = grainUrl;
+    document.getElementById('ldGrain').style.backgroundImage = grainUrl;
   })();
 
   /* ---------- Счётчик времени в шапке ---------- */
@@ -105,6 +109,14 @@
     // на телефоне раскладываем те же слова по узкому экрану
     qs.forEach(function (q) {
       if (mobile) {
+        // data-m="x,y%" — своё место на телефоне для слов, которые иначе касаются соседей
+        var m = q.el.getAttribute('data-m');
+        if (m) {
+          m = m.split(',');
+          q.el.style.left = m[0] + 'px';
+          q.el.style.top = m[1] + '%';
+          return;
+        }
         q.el.style.left = Math.min(q.l / 1440 * 390, 300) + 'px';
         q.el.style.top = (q.t / 900 * 100) + '%';
       } else {
@@ -303,9 +315,10 @@
   function tickLadder() {
     var p = pinProgress(s8);
     // фразы по очереди проявляются и растворяются; в конце не остаётся ни одной, только вывод
-    var cur = p > 0.02 && p < 0.8 ? Math.floor((p - 0.02) / 0.78 * lad.length) : -1;
+    // фразы занимают первые две трети прокрутки, последняя треть отдана выводу — его не пролистать
+    var cur = p > 0.02 && p < 0.62 ? Math.floor((p - 0.02) / 0.6 * lad.length) : -1;
     lad.forEach(function (ln, i) { ln.classList.toggle('on', i === cur); });
-    s8end.classList.toggle('on', p > 0.84);
+    s8end.classList.toggle('on', p > 0.64);
   }
 
   /* ---------- 5. Сцена ожидания: статус в телефоне живёт вместе с текстом ---------- */
@@ -443,6 +456,58 @@
     clock.classList.add('is-off');
     submit.disabled = true;
   });
+
+  /* ---------- Загрузка: от 0 до 100% примерно за 2,5 секунды ---------- */
+  (function loader() {
+    var ld = document.getElementById('loader');
+    var num = document.getElementById('ldNum');
+    var fill = document.getElementById('ldFill');
+    var DUR = reduce ? 800 : 2500;
+    var start = performance.now();
+    var loaded = document.readyState === 'complete';
+    window.addEventListener('load', function () { loaded = true; });
+    // таймер, а не requestAnimationFrame: загрузка завершится, даже если вкладка открыта в фоне
+    var iv = setInterval(function () {
+      var t = clamp((performance.now() - start) / DUR, 0, 1);
+      var v = 1 - Math.pow(1 - t, 2);          // к концу полоса замедляется
+      if (!loaded) v = Math.min(v, 0.9);       // если сайт ещё грузится — ждём на 90%
+      var pct = Math.round(v * 100);
+      num.textContent = pct + '%';
+      fill.style.width = pct + '%';
+      if (pct < 100) return;
+      clearInterval(iv);
+      setTimeout(function () {
+        ld.classList.add('is-done');
+        root.classList.remove('is-loading');
+        t0 = Date.now();                       // часы в шапке начинают считать с открытия сайта
+        setTimeout(function () { ld.parentNode && ld.parentNode.removeChild(ld); }, 1000);
+      }, 250);
+    }, 16);
+  })();
+
+  /* ---------- Светящийся курсор: точка и ореол, который чуть отстаёт ---------- */
+  (function cursor() {
+    if (!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+    root.classList.add('has-cur');
+    var cur = document.querySelector('.cur');
+    var dot = document.getElementById('curDot');
+    var glow = document.getElementById('curGlow');
+    var x = 0, y = 0, gx = 0, gy = 0, first = true;
+    window.addEventListener('mousemove', function (e) {
+      // страница увеличена через zoom, поэтому координаты мыши переводим в её единицы
+      x = e.clientX / pageZoom; y = e.clientY / pageZoom;
+      if (first) { gx = x; gy = y; first = false; }
+      cur.classList.add('is-on');
+      cur.classList.toggle('is-hover', !!(e.target.closest && e.target.closest('a, button, textarea')));
+    });
+    document.addEventListener('mouseleave', function () { cur.classList.remove('is-on'); });
+    (function move() {
+      gx += (x - gx) * 0.15; gy += (y - gy) * 0.15;
+      dot.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
+      glow.style.transform = 'translate3d(' + gx.toFixed(1) + 'px,' + gy.toFixed(1) + 'px,0)';
+      requestAnimationFrame(move);
+    })();
+  })();
 
   /* ---------- Цикл ---------- */
   function frame() {

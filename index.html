@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="is-loading">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,9 +8,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@200;300;400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261016i">
+  <link rel="stylesheet" href="style.css?v=20261016q">
 </head>
 <body>
+
+  <!-- Загрузка: ожидание как часть сайта -->
+  <div class="ld" id="loader" role="status" aria-live="polite">
+    <div class="ld__bg" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="ld__grain" id="ldGrain" aria-hidden="true"></div>
+    <div class="ld__in">
+      <div class="ld__num" id="ldNum">0%</div>
+      <div class="ld__bar" aria-hidden="true"><div class="ld__fill" id="ldFill"></div></div>
+      <div class="ld__cap">подождите немного</div>
+    </div>
+  </div>
+  <noscript><style>.ld { display: none; } html.is-loading { overflow: auto; }</style></noscript>
+
+  <!-- Светящийся курсор (только для мыши) -->
+  <div class="cur" aria-hidden="true"><div class="cur__glow" id="curGlow"></div><div class="cur__dot" id="curDot"><div class="cur__rays"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
 
   <!-- Прогресс прочтения -->
   <div class="progress" id="progress"></div>
@@ -42,9 +57,9 @@
       <div class="q q--msg fc" data-depth="20" style="left:560px;top:118px">1 новое сообщение</div>
       <div class="q fc" data-depth="22" style="left:938px;top:171px">неловкость?</div>
       <div class="q q--big fc" data-depth="40" style="left:1145px;top:270px">ждать?</div>
-      <div class="q q--msg fc" data-depth="30" style="left:1210px;top:110px">ты где?</div>
+      <div class="q q--msg fc" data-depth="30" data-m="300,7" style="left:1210px;top:110px">ты где?</div>
       <div class="q fc" data-depth="10" style="left:300px;top:225px">кто напишет?</div>
-      <div class="q q--msg fc" data-depth="16" style="left:680px;top:232px">+3</div>
+      <div class="q q--msg fc" data-depth="16" data-m="230,31" style="left:680px;top:232px">+3</div>
       <div class="q fc" data-depth="18" style="left:1099px;top:591px">долго ещё?</div>
       <div class="q q--msg fc" data-depth="24" style="left:900px;top:650px">печатает…</div>
       <div class="q q--msg fc" data-depth="12" style="left:1180px;top:205px">в сети</div>
@@ -209,17 +224,17 @@
       <h2 class="ctx__h">Немного контекста.<br>Не объяснение — фон.</h2>
       <div class="ctx__grid">
         <div class="ctx__item">
-          <div class="ctx__k">обещание</div>
+          <div class="ctx__k">Обещание</div>
           <p>Дофамин часто называют веществом удовольствия. Но в классических опытах дофаминовые нейроны отзывались на сигнал, который обещает награду, — и на ошибку ожидания, когда обещанное не пришло. Это механизм обучения: мозг запоминает, что предвещает важное.</p>
           <a class="cite" href="https://doi.org/10.1126/science.275.5306.1593" target="_blank" rel="noopener">Schultz, Dayan &amp; Montague, 1997, Science</a>
         </div>
         <div class="ctx__item">
-          <div class="ctx__k">привычка проверять</div>
+          <div class="ctx__k">Привычка проверять</div>
           <p>Короткие повторяющиеся проверки телефона закрепляются, потому что что-то новое там доступно почти мгновенно. Сами участники описывали эту привычку скорее как досаду, чем как зависимость.</p>
           <a class="cite" href="https://doi.org/10.1007/s00779-011-0412-2" target="_blank" rel="noopener">Oulasvirta et al., 2012, Personal and Ubiquitous Computing</a>
         </div>
         <div class="ctx__item">
-          <div class="ctx__k">поток</div>
+          <div class="ctx__k">Поток</div>
           <p>В неделю с включёнными уведомлениями и телефоном под рукой люди отмечали у себя больше невнимательности, чем в неделю, когда уведомления были выключены, а телефон убран.</p>
           <a class="cite" href="https://doi.org/10.1145/2858036.2858359" target="_blank" rel="noopener">Kushlev, Proulx &amp; Dunn, 2016, CHI</a>
         </div>
@@ -232,10 +247,10 @@
         <div class="frame">
           <h2 class="s8__h fc"><span>Под «мне скучно»</span><span>иногда лежит что-то ещё.</span></h2>
           <div class="lad" id="lad">
-            <p class="lad__ln">мне скучно</p>
-            <p class="lad__ln">мне нужно, чтобы что-то происходило</p>
-            <p class="lad__ln">мне нужно, чтобы что-то происходило со мной</p>
-            <p class="lad__ln">мне нужно почувствовать, что я кому-то нужен</p>
+            <p class="lad__ln">Мне скучно</p>
+            <p class="lad__ln">Мне нужно, чтобы что-то происходило</p>
+            <p class="lad__ln">Мне нужно, чтобы что-то происходило со мной</p>
+            <p class="lad__ln">Мне нужно почувствовать, что я кому-то нужен</p>
           </div>
           <p class="s8__end" id="s8end">Скука ищет любое событие.<br>Но у события, которого ждёт рука, часто есть имя.</p>
         </div>
@@ -327,6 +342,6 @@
 
   </div>
 
-  <script src="script.js?v=20261016i"></script>
+  <script src="script.js?v=20261016q"></script>
 </body>
 </html>

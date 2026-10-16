@@ -159,12 +159,12 @@ html:not(.m) .frame {
   --o: 0.55; --calm: 1;
   position: absolute; white-space: nowrap;
   font-family: 'JetBrains Mono', monospace; font-weight: 300;
-  font-size: 21.6px; line-height: normal;
+  font-size: var(--t-b); line-height: var(--lh);
   color: #f2f2f2; opacity: calc(var(--o) * var(--calm));
   will-change: transform;
   animation: nag 3s ease-in-out infinite;
 }
-.q--big { --o: 0.25; font-size: 37.4px; }
+.q--big { --o: 0.25; } /* размер у всех слов шума один, «крупные» отличаются только бледностью */
 /* «сообщения» мигают, как уведомления: внимание дёргают с разных сторон */
 .q--msg { --o: 0.8; animation-name: ping; }
 @keyframes nag {
@@ -419,7 +419,7 @@ html:not(.m) .frame {
 .lad__ln.on { opacity: 1; }
 .s8__end {
   position: absolute; left: var(--gx); top: 580px; width: 1100px;
-  font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #8c8c8c;
+  font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #f2f2f2;
   opacity: 0; transition: opacity 1.2s ease;
 }
 .s8__end.on { opacity: 1; }
@@ -559,8 +559,6 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 
 /* 1. Шум */
 .m .s1 { height: var(--vh, 100vh); min-height: 640px; }
-.m .q { font-size: 14px; }
-.m .q--big { font-size: 22px; }
 .m .s1__title { left: 20px; top: 36%; width: auto; height: auto; font-size: 60px; }
 .m .s1__hint { left: 20px; top: calc(36% + 90px); }
 
@@ -727,7 +725,7 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
   opacity: 0; will-change: transform, opacity;
 }
 .mv__end {
-  position: absolute; left: var(--gx); top: 840px;
+  position: absolute; left: var(--gx); top: 843px;
   font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #8c8c8c;
   opacity: 0; transition: opacity 1.2s ease;
 }
@@ -756,9 +754,95 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 .m .mv__grid { left: 20px; top: 240px; width: 350px; height: auto; display: block; }
 .m .mv__col { border: 0 !important; }
 .m .mv__card { position: relative; top: auto !important; left: 0; right: 0; margin-bottom: 12px; padding: 12px 14px; }
-.m .mv__end { left: 20px; top: auto; bottom: 60px; width: 350px; }
+.m .mv__end { left: 20px; top: auto; bottom: 57px; width: 350px; }
 
 /* на телефоне строки текста переносятся свободно, а не по макету */
 .m .s2__text, .m .s5__h, .m .s5__p, .m .s6__h { display: block; }
 /* на узком экране текст уходит под шапку — подкладываем мягкое затемнение */
 .m .hdr::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 52px; background: linear-gradient(#000 55%, transparent); }
+
+/* ===== Загрузка ===== */
+html.is-loading { overflow: hidden; }
+html.is-loading .s1__hint { animation-play-state: paused; } /* подпись на первом экране ждёт конца загрузки */
+.ld {
+  position: fixed; inset: 0; z-index: 300;
+  background: #000; overflow: hidden;
+  transition: opacity 0.9s ease, visibility 0.9s ease;
+}
+.ld.is-done { opacity: 0; visibility: hidden; }
+/* переливающийся чёрно-серый градиент: пять светлых пятен быстро плывут по чёрному */
+.ld__bg i {
+  position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 220, 220, 0.5) 0%, rgba(150, 150, 150, 0.22) 35%, transparent 65%);
+  filter: blur(24px); will-change: transform;
+}
+.ld__bg i:nth-child(1) { left: -20vmax; top: -25vmax; animation: ldA 3.2s ease-in-out infinite alternate; }
+.ld__bg i:nth-child(2) { right: -25vmax; top: 5vmax; animation: ldB 3.8s ease-in-out infinite alternate; }
+.ld__bg i:nth-child(3) { left: 10vmax; bottom: -35vmax; animation: ldC 3.5s ease-in-out infinite alternate; }
+.ld__bg i:nth-child(4) { left: 35vmax; top: -30vmax; width: 45vmax; height: 45vmax; animation: ldB 2.9s ease-in-out infinite alternate-reverse; }
+.ld__bg i:nth-child(5) { right: -10vmax; bottom: -30vmax; width: 50vmax; height: 50vmax; animation: ldA 4.2s ease-in-out infinite alternate-reverse; }
+@keyframes ldA { to { transform: translate3d(30vmax, 22vmax, 0) scale(1.25); } }
+@keyframes ldB { to { transform: translate3d(-35vmax, 15vmax, 0) scale(0.85); } }
+@keyframes ldC { to { transform: translate3d(25vmax, -28vmax, 0) scale(1.3); } }
+.ld__grain { position: absolute; inset: 0; background-repeat: repeat; background-size: 256px 256px; }
+/* цифры, полоса и подпись — по центру экрана */
+.ld__in {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ld__num {
+  font-family: 'Unbounded', sans-serif; font-weight: 300;
+  font-size: var(--t-h); line-height: var(--lh-h); color: #f2f2f2;
+  font-variant-numeric: tabular-nums;
+}
+.ld__bar { width: 640px; max-width: calc(100% - 160px); height: 1px; margin-top: 24px; background: rgba(242, 242, 242, 0.25); }
+.ld__fill { height: 100%; width: 0; background: #f2f2f2; box-shadow: 0 0 12px rgba(255, 255, 255, 0.6); }
+.ld__cap {
+  margin-top: 16px;
+  font-weight: 300; font-size: var(--t-s); line-height: var(--lh); color: #8c8c8c;
+}
+.m .ld__bar { width: 350px; max-width: calc(100% - 40px); }
+
+/* ===== Курсор-сияние: яркое ядро, лучи и мягкий ореол ===== */
+.cur { display: none; }
+html.has-cur, html.has-cur * { cursor: none !important; }
+html.has-cur .cur { display: block; }
+.cur__dot, .cur__glow {
+  position: fixed; left: 0; top: 0; z-index: 400; pointer-events: none; border-radius: 50%;
+  opacity: 0; transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease, margin 0.3s ease;
+  will-change: transform;
+}
+.cur.is-on .cur__dot, .cur.is-on .cur__glow { opacity: 1; }
+.cur__dot {
+  width: 8px; height: 8px; margin: -4px 0 0 -4px; background: #fff;
+  box-shadow: 0 0 4px 2px #fff, 0 0 14px 6px rgba(255, 255, 255, 0.6);
+  filter: blur(0.6px);
+}
+/* ореол чуть отстаёт от ядра */
+.cur__glow {
+  width: 80px; height: 80px; margin: -40px 0 0 -40px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 35%, transparent 70%);
+}
+/* восемь лучей: четыре длинных и четыре короче; медленно мерцают и чуть поворачиваются */
+.cur__rays { position: absolute; left: 50%; top: 50%; width: 0; height: 0; animation: rays 4s ease-in-out infinite; transition: scale 0.3s ease; }
+.cur__rays i {
+  position: absolute; left: -0.75px; top: -40px; width: 1.5px; height: 80px;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.95) 50%, transparent);
+  filter: blur(0.8px); /* лучи чуть мягкие, без резких краёв */
+}
+.cur__rays i:nth-child(2) { transform: rotate(45deg); }
+.cur__rays i:nth-child(3) { transform: rotate(90deg); }
+.cur__rays i:nth-child(4) { transform: rotate(135deg); }
+.cur__rays i:nth-child(n+5) { top: -24px; height: 48px; opacity: 0.6; }
+.cur__rays i:nth-child(5) { transform: rotate(22.5deg); }
+.cur__rays i:nth-child(6) { transform: rotate(67.5deg); }
+.cur__rays i:nth-child(7) { transform: rotate(112.5deg); }
+.cur__rays i:nth-child(8) { transform: rotate(157.5deg); }
+@keyframes rays {
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 1; }
+  50% { transform: rotate(14deg) scale(0.82); opacity: 0.7; }
+}
+/* над кнопками и ссылками сияние разрастается */
+.cur.is-hover .cur__glow { width: 140px; height: 140px; margin: -70px 0 0 -70px; }
+.cur.is-hover .cur__rays { scale: 1.35; }
+.reduce .ld__bg i, .reduce .cur__rays { animation: none !important; }
