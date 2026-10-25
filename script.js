@@ -48,8 +48,8 @@
     placeWords();
     measureWheel();
     placeBlobs();
-    if (typeof sizeMobCurve === 'function') sizeMobCurve();
     placeUnderHeadings();
+    if (typeof sizeMobCurve === 'function') sizeMobCurve();
   }
 
   /* На телефоне и планшете кривая и карточки встают ровно под заголовком, сколько бы строк он ни занял */
@@ -359,8 +359,9 @@
   var CURVE_LEN = curve.getTotalLength();
   curve.style.strokeDasharray = CURVE_LEN;
   curve.style.strokeDashoffset = CURVE_LEN;
-  /* На телефоне и планшете — та же кривая, только повёрнутая вертикально (x и y меняются местами):
-     она рисуется во всю высоту экрана, точки и фразы загораются прямо на ней */
+  /* На телефоне и планшете — та же кривая, только повёрнутая вертикально (x и y меняются местами).
+     Она растягивается на всю ширину и высоту под заголовком; фразы встают рядом с точками
+     так, чтобы не касаться линии и друг друга */
   var VB_W = 571.001, VB_H = 1273.59;
   var MOB_DOTS = [ // центры точек в координатах повёрнутой кривой
     { x: 237.5, y: 202.5, at: 0.25 },
@@ -371,28 +372,59 @@
   var mobArt = document.createElement('div');
   mobArt.className = 's7__mob';
   mobArt.setAttribute('aria-hidden', 'true');
-  var dMob = curve.getAttribute('d').replace(/(-?[\d.]+) (-?[\d.]+)/g, function (_, x, y) { return y + ' ' + x; });
+  var dMobSrc = curve.getAttribute('d').replace(/(-?[\d.]+) (-?[\d.]+)/g, function (_, x, y) { return y + ' ' + x; });
   var lblTexts = $$('.s7__img .lbl').map(function (l) { return l.textContent; });
-  var html = '<svg viewBox="0 0 ' + VB_W + ' ' + VB_H + '" fill="none"><path id="curveMob" d="' + dMob + '" stroke="white" stroke-linejoin="round"/></svg>';
+  var html = '<svg fill="none"><path id="curveMob" stroke="white" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   MOB_DOTS.forEach(function (d, i) {
-    var left = (d.x / VB_W * 100).toFixed(2) + '%', top = (d.y / VB_H * 100).toFixed(2) + '%';
-    var side = d.x < 300 ? 'r' : 'l'; // фраза справа от точки или слева
-    html += '<i class="s7__mdot" data-at="' + d.at + '" style="left:' + left + ';top:' + top + '"></i>';
-    html += '<div class="s7__mlbl s7__mlbl--' + side + (i === 3 ? ' s7__mlbl--last' : '') + '" data-at="' + d.at + '" style="' +
-      (side === 'r' ? 'left:calc(' + left + ' + 16px)' : 'right:calc(' + (100 - d.x / VB_W * 100).toFixed(2) + '% + 16px)') +
-      ';top:' + top + '">' + lblTexts[i] + '</div>';
+    html += '<i class="s7__mdot" data-at="' + d.at + '"></i>';
+    html += '<div class="s7__mlbl' + (i === 3 ? ' s7__mlbl--last' : '') + '" data-at="' + d.at + '">' + lblTexts[i] + '</div>';
   });
   mobArt.innerHTML = html;
   curve.closest('.frame').appendChild(mobArt);
+  var mobSvg = mobArt.querySelector('svg');
   var curveMob = document.getElementById('curveMob');
-  var CURVE_MOB_LEN = curveMob.getTotalLength();
-  curveMob.style.strokeDasharray = CURVE_MOB_LEN;
-  curveMob.style.strokeDashoffset = CURVE_MOB_LEN;
+  var mobDots = $$('.s7__mdot'), mobLbls = $$('.s7__mlbl');
+  var CURVE_MOB_LEN = 1;
   function sizeMobCurve() {
-    // толщина линии — 2px на экране при любом масштабе
-    if (!mobArt || !curveMob) return;
-    var w = mobArt.getBoundingClientRect().width / unit;
-    if (w > 0) curveMob.setAttribute('stroke-width', (2 * VB_W / w).toFixed(2));
+    if (!mobArt || !curveMob || !mobile) return;
+    var W = mobArt.offsetWidth, H = mobArt.offsetHeight;
+    if (!W || !H) return;
+    var sx = W / VB_W, sy = H / VB_H;
+    // путь пересчитываем прямо в пиксели блока — линия растягивается без искажения толщины
+    mobSvg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var k = 0;
+    curveMob.setAttribute('d', dMobSrc.replace(/-?[\d.]+/g, function (n) { return (parseFloat(n) * (k++ % 2 ? sy : sx)).toFixed(1); }));
+    CURVE_MOB_LEN = curveMob.getTotalLength();
+    curveMob.style.strokeDasharray = CURVE_MOB_LEN;
+    // точки кривой — чтобы проверять, не задевает ли фраза линию
+    var pts = [];
+    for (var i = 0; i <= 240; i++) pts.push(curveMob.getPointAtLength(CURVE_MOB_LEN * i / 240));
+    var placed = [];
+    MOB_DOTS.forEach(function (d, i) {
+      var x = d.x * sx, y = d.y * sy, el = mobLbls[i];
+      mobDots[i].style.left = x + 'px';
+      mobDots[i].style.top = y + 'px';
+      var w = el.offsetWidth, h = el.offsetHeight, g = 16;
+      var cands = [
+        [x + g, y - h / 2, 'l'], [x - g - w, y - h / 2, 'r'],
+        [x + g, y + 10, 'l'], [x - g - w, y + 10, 'r'],
+        [x + g, y - h - 10, 'l'], [x - g - w, y - h - 10, 'r'],
+        [x + g, y + h * 0.6 + 20, 'l'], [x - g - w, y + h * 0.6 + 20, 'r']
+      ];
+      var best = null;
+      for (var c = 0; c < cands.length && !best; c++) {
+        var r = { l: cands[c][0], t: cands[c][1], r: cands[c][0] + w, b: cands[c][1] + h };
+        if (r.l < -2 || r.r > W + 2 || r.t < -h) continue;
+        var touches = pts.some(function (p) { return p.x > r.l - 8 && p.x < r.r + 8 && p.y > r.t - 6 && p.y < r.b + 6; });
+        var crowds = placed.some(function (q) { return r.l < q.r + 6 && q.l < r.r + 6 && r.t < q.b + 6 && q.t < r.b + 6; });
+        if (!touches && !crowds) best = { r: r, a: cands[c][2] };
+      }
+      if (!best) best = { r: { l: Math.min(x + g, W - w), t: y - h / 2, r: 0, b: 0 }, a: 'l' };
+      el.style.left = best.r.l.toFixed(1) + 'px';
+      el.style.top = best.r.t.toFixed(1) + 'px';
+      el.style.textAlign = best.a === 'r' ? 'right' : 'left';
+      placed.push({ l: best.r.l, t: best.r.t, r: best.r.l + w, b: best.r.t + h });
+    });
   }
 
   var marks = $$('.s7 [data-at]').map(function (el) {

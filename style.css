@@ -935,9 +935,8 @@ html.has-cur .cur { display: block; }
 .m .s7__path, .m .s7__list { display: none; }
 .m .s7__mob {
   --s7top: calc(80px + 3 * var(--lh-h) * var(--t-h) + 30px);
-  display: block; position: absolute; left: 50%; top: var(--s7top);
-  height: calc(var(--vh, 800px) - var(--s7top) - 40px); aspect-ratio: 571 / 1273.59;
-  transform: translateX(-50%);
+  display: block; position: absolute; left: var(--mx); width: var(--mc); top: var(--s7top);
+  height: calc(var(--vh, 800px) - var(--s7top) - 40px);
 }
 .t .s7__mob { --s7top: calc(100px + 2 * var(--lh-h) * var(--t-h) + 50px); }
 .s7__mob svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -947,10 +946,9 @@ html.has-cur .cur { display: block; }
 }
 .t .s7__mdot { width: 20px; height: 20px; margin: -10px 0 0 -10px; }
 .s7__mlbl {
-  position: absolute; transform: translateY(-50%); white-space: pre-line; width: max-content;
+  position: absolute; white-space: pre-line; width: max-content;
   font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #f2f2f2;
 }
-.s7__mlbl--l { text-align: right; }
 .s7__mlbl--last { font-weight: 400; }
 .s7__mdot, .s7__mlbl { opacity: 0; transition: opacity 0.4s ease; }
 .s7__mdot.on, .s7__mlbl.on { opacity: 1; }
@@ -1031,3 +1029,14 @@ html.has-cur .cur { display: block; }
 .m .grain { z-index: 1; }
 /* загрузка на телефоне — без размытия, пятна и так мягкие */
 .m .ld__bg i { filter: none; background: radial-gradient(circle, rgba(220, 220, 220, 0.45) 0%, rgba(150, 150, 150, 0.18) 38%, transparent 68%); }
+
+/* ===== Шапка на телефоне и планшете: полупрозрачное стекло, текст по центру полосы ===== */
+.m .hdr::before {
+  height: 64px;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent);
+}
+.m .hdr__brand, .m .hdr__clock { top: 18px; }
+.t .hdr::before { height: 84px; }
+.t .hdr__brand, .t .hdr__clock { top: 26px; }
