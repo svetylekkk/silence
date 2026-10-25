@@ -1006,3 +1006,28 @@ html.has-cur .cur { display: block; }
   box-shadow: 0 0 18px rgba(255, 255, 255, 0.06);
 }
 .m .phone__msg { border-color: rgba(242, 242, 242, 0.6); }
+
+/* =====================================================================
+   Телефон и планшет: лёгкий фон. Огромные размытые SVG-пятна телефон
+   пересчитывает каждый кадр (лаги), а Safari на iPhone ещё и обрезает их
+   размытие по краю (резкие диагональные полосы). Здесь те же серые пятна
+   нарисованы мягкими градиентами — без фильтров и без движения.
+   ===================================================================== */
+.m .blob { display: none; }
+.m .bg::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 1400px at 15% 1.5%, rgba(205, 205, 205, 0.30), transparent 70%),
+    radial-gradient(ellipse 130% 1800px at 85% 9%, rgba(190, 190, 190, 0.22), transparent 70%),
+    radial-gradient(ellipse 130% 1800px at 20% 22%, rgba(190, 190, 190, 0.22), transparent 70%),
+    radial-gradient(ellipse 130% 1800px at 80% 33%, rgba(190, 190, 190, 0.22), transparent 70%),
+    radial-gradient(ellipse 120% 1600px at 25% 46%, rgba(200, 200, 200, 0.24), transparent 70%),
+    radial-gradient(ellipse 130% 1800px at 85% 60%, rgba(190, 190, 190, 0.22), transparent 70%),
+    radial-gradient(ellipse 130% 1800px at 20% 74%, rgba(190, 190, 190, 0.20), transparent 70%),
+    radial-gradient(ellipse 130% 1800px at 60% 90%, rgba(190, 190, 190, 0.22), transparent 70%);
+  transition: opacity 2.5s ease;
+}
+.m body.is-quiet .bg::before { opacity: 0.4; }
+.m .grain { z-index: 1; }
+/* загрузка на телефоне — без размытия, пятна и так мягкие */
+.m .ld__bg i { filter: none; background: radial-gradient(circle, rgba(220, 220, 220, 0.45) 0%, rgba(150, 150, 150, 0.18) 38%, transparent 68%); }

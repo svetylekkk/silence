@@ -459,7 +459,9 @@
     var txt = row.textContent;
     row.textContent = '';
     var letters = [];
-    for (var r = 0; r < 4; r++) {
+    // на телефоне и планшете строка повторяется 2 раза вместо 4 — вдвое меньше анимированных букв
+    var reps = root.clientWidth < 1024 ? 2 : 4;
+    for (var r = 0; r < reps; r++) {
       txt.split('').forEach(function (ch) {
         var sp = document.createElement('span');
         sp.textContent = ch;
