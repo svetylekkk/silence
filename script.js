@@ -16,12 +16,40 @@
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function $$(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
 
+  /* ---------- Скорость: в кадре сначала всё измеряем, потом пишем, и только то, что изменилось ----------
+     rect() — размеры элемента, измеренные один раз за кадр; setStyle/setVar/setText не трогают страницу,
+     если значение то же, что в прошлый раз */
+  var frameId = 0;
+  function rect(el) {
+    if (el.__rf !== frameId) { el.__rf = frameId; el.__r = el.getBoundingClientRect(); }
+    return el.__r;
+  }
+  function setStyle(el, prop, val) {
+    var c = el.__st || (el.__st = {});
+    if (c[prop] !== val) { c[prop] = val; el.style[prop] = val; }
+  }
+  function setVar(el, name, val) {
+    var c = el.__st || (el.__st = {});
+    if (c[name] !== val) { c[name] = val; el.style.setProperty(name, val); }
+  }
+  function setText(el, val) {
+    if (el.__tx !== val) { el.__tx = val; el.textContent = val; }
+  }
+  // секция на экране или в пределах одного экрана от него — иначе её анимацию не считаем;
+  // запас в целый экран нужен, чтобы всё успело встать на место до того, как секция покажется
+  function onScreen(el) {
+    var r = rect(el), H = window.innerHeight;
+    return r.bottom > -H && r.top < 2 * H;
+  }
+
   /* ---------- Масштаб под ширину окна ----------
      компьютер (от 1024px): макет 1440, масштабируется под ширину;
      планшет вертикально (768–1023px): одна колонка в реальную ширину;
      телефон (до 768px): макет 390, масштабируется под ширину;
      лежащий телефон (высота меньше 500px): телефонная раскладка в реальную ширину */
   function layout() {
+    frameId++; // размеры поменялись — старые измерения больше не годятся
+    if (typeof wake === 'function') wake();
     root.style.zoom = 1;
     var w = root.clientWidth; // ширина без полосы прокрутки
     var h = window.innerHeight;
@@ -65,13 +93,13 @@
 
   /* Прогресс прохождения закреплённой секции: 0..1 */
   function pinProgress(el) {
-    var r = el.getBoundingClientRect();
+    var r = rect(el);
     var top = r.top / unit, h = r.height / unit;
     return h > vh ? clamp(-top / (h - vh), 0, 1) : 0;
   }
   /* Насколько секция видна: 0..1 */
   function visible(el) {
-    var r = el.getBoundingClientRect();
+    var r = rect(el);
     var top = r.top / unit, bottom = r.bottom / unit;
     return clamp((Math.min(bottom, vh) - Math.max(top, 0)) / Math.min(vh, bottom - top), 0, 1);
   }
@@ -110,15 +138,15 @@
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
   setInterval(function () {
-    if (clockOn) clock.textContent = fmt(Math.floor((Date.now() - t0) / 1000));
+    if (clockOn) setText(clock, fmt(Math.floor((Date.now() - t0) / 1000)));
   }, 250);
 
   /* ---------- Прогресс прочтения ---------- */
   var bar = document.getElementById('progress');
-  function updateBar() {
-    var max = root.scrollHeight - window.innerHeight;
+  function updateBar(docH) {
+    var max = docH - window.innerHeight;
     var p = max > 0 ? window.scrollY / max : 0;
-    bar.style.width = clamp(p, 0, 1) * 100 + '%';
+    setStyle(bar, 'width', (clamp(p, 0, 1) * 100).toFixed(2) + '%');
   }
 
   /* ---------- 1. Шум: слова дёргаются, мигают и затихают по мере ухода с первого экрана ---------- */
@@ -194,13 +222,14 @@
     mouse.y = e.clientY / window.innerHeight - 0.5;
   });
   function tickNoise() {
-    var r = hero.getBoundingClientRect();
+    if (!onScreen(hero)) return;
+    var r = rect(hero);
     var p = clamp(-r.top / unit / (r.height / unit * 0.6), 0, 1); // 0 — шум, 1 — тишина
     qs.forEach(function (q) {
       q.x += (mouse.x * q.d - q.x) * 0.08;
       q.y += (mouse.y * q.d - q.y) * 0.08;
-      q.el.style.transform = 'translate3d(' + q.x.toFixed(2) + 'px,' + q.y.toFixed(2) + 'px,0)';
-      q.el.style.setProperty('--calm', clamp(1 - (p - q.fade) / 0.5, 0, 1).toFixed(3));
+      setStyle(q.el, 'transform', 'translate3d(' + q.x.toFixed(2) + 'px,' + q.y.toFixed(2) + 'px,0)');
+      setVar(q.el, '--calm', clamp(1 - (p - q.fade) / 0.5, 0, 1).toFixed(3));
     });
   }
 
@@ -326,8 +355,9 @@
   function tickWheel() {
     var g = mobile ? W_M : W_D;
     if (mobile) { W_M.CX = DESIGN_W; W_M.R = tablet ? 300 : 205; W_M.CY = tablet ? 560 : 470; }
-    var top = s3.getBoundingClientRect().top / unit;
+    var top = rect(s3).top / unit;
     var target = top * K;               // 0, когда секция вверху окна
+    if (!onScreen(s3)) { rot = target; return; } // вне экрана колесо просто встаёт на место
     rot = rot === null ? target : rot + (target - rot) * 0.1;
     wheel.forEach(function (w) {
       var a = w.a + rot;
@@ -338,8 +368,8 @@
       if (abs <= 3) o = 1;
       else if (abs <= STEP) o = 1 - 0.4 * (abs - 3) / (STEP - 3);
       else o = 0.6 * clamp(1 - (abs - STEP) / 30, 0, 1);
-      w.el.style.transform = 'translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,0)';
-      w.el.style.color = 'rgba(242,242,242,' + o.toFixed(3) + ')';
+      setStyle(w.el, 'transform', 'translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,0)');
+      setStyle(w.el, 'color', 'rgba(242,242,242,' + o.toFixed(3) + ')');
     });
   }
 
@@ -348,9 +378,10 @@
   var track = document.getElementById('track');
   var TRACK_DIST = 2300;
   function tickTrack() {
-    if (mobile) { track.style.transform = ''; return; }
+    if (mobile) { setStyle(track, 'transform', ''); return; }
+    if (!onScreen(s5)) return;
     var p = pinProgress(s5);
-    track.style.transform = 'translate3d(' + (-TRACK_DIST * p).toFixed(2) + 'px,0,0)';
+    setStyle(track, 'transform', 'translate3d(' + (-TRACK_DIST * p).toFixed(2) + 'px,0,0)');
   }
 
   /* ---------- 4. Кривая обещаний по скроллу ---------- */
@@ -447,11 +478,12 @@
   function tickCurve() {
     var p = pinProgress(s7);
     // заголовок экрана стоит под шапкой — убираем шапку, пока экран закреплён
-    var r7 = s7.getBoundingClientRect();
+    var r7 = rect(s7);
     hdr.classList.toggle('is-hidden', !mobile && r7.top / unit < 80 && r7.bottom / unit > 80);
-    curve.style.strokeDashoffset = (CURVE_LEN * (1 - p)).toFixed(2);
-    curveMob.style.strokeDashoffset = (CURVE_MOB_LEN * (1 - p)).toFixed(2);
     marks.forEach(function (m) { m.el.classList.toggle('on', p >= m.at); });
+    if (!onScreen(s7)) return;
+    if (mobile) setStyle(curveMob, 'strokeDashoffset', (CURVE_MOB_LEN * (1 - p)).toFixed(2));
+    else setStyle(curve, 'strokeDashoffset', (CURVE_LEN * (1 - p)).toFixed(2));
   }
 
   /* ---------- Лестница: от «мне скучно» к «мне нужно, чтобы меня заметили» ---------- */
@@ -472,11 +504,12 @@
   var phoneSt = document.getElementById('phoneSt');
   var phoneTicks = document.getElementById('phoneTicks');
   var curP = -1;
+  var sceneSec = document.getElementById('scene');
   function tickScene() {
     var mid = window.innerHeight * (mobile ? 0.62 : 0.55);
     var best = -1;
     sceneP.forEach(function (p, i) {
-      if (p.getBoundingClientRect().top < mid) best = i;
+      if (rect(p).top < mid) best = i;
     });
     if (best === curP) return;
     curP = best;
@@ -518,6 +551,7 @@
     return { el: row, dir: parseFloat(row.getAttribute('data-dir')), i: i, letters: letters };
   });
   function tickNoiseScreen() {
+    if (!onScreen(nz)) return;
     var p = pinProgress(nz);
     // 1. шум накатывает ряд за рядом и ускоряется
     nzRows.forEach(function (r) {
@@ -525,8 +559,8 @@
       // ряд всегда начинается за левым краем, поэтому пустых полей нет ни в начале, ни в конце
       var m = p * p * 2200;
       var x = (r.dir > 0 ? -1400 - m : -3600 + m) * (mobile ? 0.5 : 1);
-      r.el.style.transform = 'translate3d(' + x.toFixed(1) + 'px,0,0)';
-      r.el.style.opacity = inK.toFixed(3);
+      setStyle(r.el, 'transform', 'translate3d(' + x.toFixed(1) + 'px,0,0)');
+      setStyle(r.el, 'opacity', inK.toFixed(3));
       // 2. когда экран гаснет, шум рассыпается по буквам
       r.letters.forEach(function (l) {
         var off = p > l.t;
@@ -536,21 +570,21 @@
     // счётчик уведомлений растёт, пока шум нарастает
     var c = clamp(p / 0.38, 0, 1);
     var n = COUNTS[Math.min(COUNTS.length - 1, Math.floor(c * COUNTS.length))];
-    nzNum.textContent = n === 99 ? '99+' : n;
-    nzCap.textContent = plural(n, 'новое', 'новых', 'новых');
+    setText(nzNum, n === 99 ? '99+' : String(n));
+    setText(nzCap, plural(n, 'новое', 'новых', 'новых'));
     // экран гаснет
-    nzScreen.style.opacity = (1 - clamp((p - 0.4) / 0.12, 0, 1)).toFixed(3);
+    setStyle(nzScreen, 'opacity', (1 - clamp((p - 0.4) / 0.12, 0, 1)).toFixed(3));
     // 3. тёмный экран телефона разрастается до целого экрана
     var g = ease(clamp((p - 0.62) / 0.3, 0, 1));
     var W = DESIGN_W, H = vh;
     var w0 = tablet ? 240 : mobile ? 170 : 280, h0 = tablet ? 480 : mobile ? 340 : 560;
-    nzPhone.style.width = (w0 + (W + 4 - w0) * g).toFixed(1) + 'px';
-    nzPhone.style.height = (h0 + (H + 4 - h0) * g).toFixed(1) + 'px';
-    nzPhone.style.borderRadius = ((mobile ? 28 : 44) * (1 - g)).toFixed(1) + 'px';
-    nzQuiet.style.opacity = clamp((p - 0.86) / 0.1, 0, 1).toFixed(3);
+    setStyle(nzPhone, 'width', (w0 + (W + 4 - w0) * g).toFixed(1) + 'px');
+    setStyle(nzPhone, 'height', (h0 + (H + 4 - h0) * g).toFixed(1) + 'px');
+    setStyle(nzPhone, 'borderRadius', ((mobile ? 28 : 44) * (1 - g)).toFixed(1) + 'px');
+    setStyle(nzQuiet, 'opacity', clamp((p - 0.86) / 0.1, 0, 1).toFixed(3));
     // когда экран телефона заполнил всё окно, чёрное тает и проступает фон сайта —
     // к моменту, когда экран уезжает, резкой границы чёрного и фона уже нет
-    nzPhone.style.opacity = (1 - clamp((p - 0.9) / 0.1, 0, 1)).toFixed(3);
+    setStyle(nzPhone, 'opacity', (1 - clamp((p - 0.9) / 0.1, 0, 1)).toFixed(3));
   }
 
   /* ---------- Мелкие движения складываются в картину ---------- */
@@ -560,25 +594,26 @@
     return { el: el, r: parseFloat(el.getAttribute('data-r')) };
   });
   function tickMoves() {
+    if (!onScreen(mv)) return;
     // телефон вертикально: карточки идут лентой, каждая вплывает, когда до неё доходит прокрутка
     if (feedMode) {
       var vhPx = window.innerHeight;
       mvCards.forEach(function (c) {
-        var top = c.el.parentNode.getBoundingClientRect().top; // колонка без сдвига — мерим по ней
+        var top = rect(c.el.parentNode).top; // колонка без сдвига — мерим по ней
         var k = ease(clamp((vhPx * 0.92 - top) / (vhPx * 0.3), 0, 1));
         var rot = c.r * (1 - k) + c.r * 0.25;
-        c.el.style.transform = 'translate3d(0,' + ((1 - k) * 60).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg)';
-        c.el.style.opacity = k.toFixed(3);
+        setStyle(c.el, 'transform', 'translate3d(0,' + ((1 - k) * 60).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg)');
+        setStyle(c.el, 'opacity', k.toFixed(3));
       });
-      mvEnd.classList.toggle('on', mvEnd.getBoundingClientRect().top < vhPx * 0.9);
+      mvEnd.classList.toggle('on', rect(mvEnd).top < vhPx * 0.9);
       return;
     }
     var p = lowMode ? 1 : pinProgress(mv); // на низком экране карточки просто стоят списком
     mvCards.forEach(function (c, i) {
       var k = ease(clamp((p - i * 0.13) / 0.22, 0, 1));
       var rot = c.r * (1 - k) + c.r * 0.15;
-      c.el.style.transform = 'translate3d(0,' + ((1 - k) * (mobile ? 160 : 420)).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg)';
-      c.el.style.opacity = k.toFixed(3);
+      setStyle(c.el, 'transform', 'translate3d(0,' + ((1 - k) * (mobile ? 160 : 420)).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg)');
+      setStyle(c.el, 'opacity', k.toFixed(3));
     });
     mvEnd.classList.toggle('on', p > 0.86);
   }
@@ -667,15 +702,29 @@
     document.addEventListener('mouseleave', function () { cur.classList.remove('is-on'); });
     (function move() {
       gx += (x - gx) * 0.15; gy += (y - gy) * 0.15;
-      dot.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0)';
-      glow.style.transform = 'translate3d(' + gx.toFixed(1) + 'px,' + gy.toFixed(1) + 'px,0)';
+      setStyle(dot, 'transform', 'translate3d(' + x + 'px,' + y + 'px,0)');
+      setStyle(glow, 'transform', 'translate3d(' + gx.toFixed(1) + 'px,' + gy.toFixed(1) + 'px,0)');
       requestAnimationFrame(move);
     })();
   })();
 
   /* ---------- Цикл ---------- */
+  /* Кадр считается, только пока что-то движется: прокрутка, мышь, изменение окна —
+     и ещё ~2 секунды после, чтобы плавные доводки успели закончиться. В покое страница не трогается */
+  var lastY = -1, active = 0;
+  function wake() { active = 120; }
+  window.addEventListener('mousemove', wake, { passive: true });
+  // заранее измеряем всё, что понадобится в кадре: так браузер считает раскладку один раз, а не после каждой записи
+  var measured = [hero, s2, s3, s5, s7, s8, sceneSec, nz, mv, mvEnd].concat(quietZones, sceneP, mvCards.map(function (c) { return c.el.parentNode; }));
   function frame() {
-    updateBar();
+    var y = window.scrollY;
+    if (y !== lastY) { lastY = y; wake(); }
+    if (active <= 0) { requestAnimationFrame(frame); return; }
+    active--;
+    frameId++;
+    var docMax = root.scrollHeight;
+    for (var i = 0; i < measured.length; i++) rect(measured[i]);
+    updateBar(docMax);
     tickNoise();
     tickQuiet();
     tickWords();
@@ -691,7 +740,16 @@
 
   if (reduce) root.classList.add('reduce');
   layout();
-  window.addEventListener('resize', layout);
+  /* На телефоне при прокрутке вверх появляется адресная строка браузера — окно чуть меняет высоту.
+     Полная перекладка страницы в этот момент и давала рывки, поэтому такие мелкие изменения пропускаем:
+     пересчитываем всё, только если поменялась ширина (поворот) или высота сильно (клавиатура, другое окно) */
+  var lastW = window.innerWidth, lastH = window.innerHeight;
+  window.addEventListener('resize', function () {
+    var w = window.innerWidth, h = window.innerHeight;
+    if (mobile && Math.abs(w - lastW) < 2 && Math.abs(h - lastH) < 160) return;
+    layout();
+    lastW = w; lastH = h;
+  });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layout(); placeWords(true); });
   window.addEventListener('load', placeBlobs);
   requestAnimationFrame(frame);
