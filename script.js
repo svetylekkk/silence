@@ -3,8 +3,11 @@
 
   var root = document.documentElement;
   var page = document.getElementById('page');
-  var DESIGN_W = 1440; // ширина макета; на телефоне — 390
-  var mobile = false;
+  var DESIGN_W = 1440; // ширина макета: компьютер 1440, телефон 390, планшет и лежащий телефон — реальная ширина
+  var mobile = false;  // раскладка в одну колонку (телефон и планшет)
+  var tablet = false;
+  var lowMode = false; // низкий экран: телефон, повёрнутый горизонтально
+  var feedMode = false; // телефон вертикально: карточки жестов лентой
   var unit = 1;   // сколько единиц getBoundingClientRect приходится на 1 css-px макета
   var pageZoom = 1; // во сколько раз увеличена страница (для курсора)
   var vh = 900;   // высота окна в px макета
@@ -13,13 +16,26 @@
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
   function $$(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
 
-  /* ---------- Масштаб под ширину окна (макет 1440, на телефоне 390) ---------- */
+  /* ---------- Масштаб под ширину окна ----------
+     компьютер (от 1024px): макет 1440, масштабируется под ширину;
+     планшет вертикально (768–1023px): одна колонка в реальную ширину;
+     телефон (до 768px): макет 390, масштабируется под ширину;
+     лежащий телефон (высота меньше 500px): телефонная раскладка в реальную ширину */
   function layout() {
     root.style.zoom = 1;
     var w = root.clientWidth; // ширина без полосы прокрутки
-    mobile = w < 768;
-    DESIGN_W = mobile ? 390 : 1440;
+    var h = window.innerHeight;
+    var low = h < 500 && w < 1024;
+    tablet = !low && w >= 768 && w < 1024;
+    mobile = low || w < 1024;
+    DESIGN_W = !mobile ? 1440 : (tablet || low) ? w : 390;
     root.classList.toggle('m', mobile);
+    root.classList.toggle('t', tablet);
+    lowMode = low;
+    root.classList.toggle('low', low);
+    feedMode = mobile && !tablet && !low;
+    root.classList.toggle('feed', feedMode);
+    root.style.setProperty('--mW', DESIGN_W + 'px');
     var zoom = w / DESIGN_W;
     pageZoom = zoom;
     root.style.zoom = zoom;
@@ -32,6 +48,19 @@
     placeWords();
     measureWheel();
     placeBlobs();
+    if (typeof sizeMobCurve === 'function') sizeMobCurve();
+    placeUnderHeadings();
+  }
+
+  /* На телефоне и планшете кривая и карточки встают ровно под заголовком, сколько бы строк он ни занял */
+  function placeUnderHeadings() {
+    var gap = tablet ? 50 : 30;
+    [['.s7__h', '.s7__mob', '--s7top'], ['.mv__h', '.mv__grid', '--mvtop']].forEach(function (x) {
+      var h = document.querySelector(x[0]), el = document.querySelector(x[1]);
+      if (!h || !el) return;
+      if (mobile) el.style.setProperty(x[2], (h.offsetTop + h.offsetHeight + gap) + 'px');
+      else el.style.removeProperty(x[2]);
+    });
   }
 
   /* Прогресс прохождения закреплённой секции: 0..1 */
@@ -105,26 +134,60 @@
       fade: Math.random() * 0.5
     };
   });
-  function placeWords() {
-    // на телефоне раскладываем те же слова по узкому экрану
-    qs.forEach(function (q) {
-      if (mobile) {
-        // data-m="x,y%" — своё место на телефоне для слов, которые иначе касаются соседей
-        var m = q.el.getAttribute('data-m');
-        if (m) {
-          m = m.split(',');
-          q.el.style.left = m[0] + 'px';
-          q.el.style.top = m[1] + '%';
-          return;
-        }
-        q.el.style.left = Math.min(q.l / 1440 * 390, 300) + 'px';
-        q.el.style.top = (q.t / 900 * 100) + '%';
-      } else {
-        q.el.style.left = q.l + 'px';
-        q.el.style.top = q.t + 'px';
+  /* На телефоне и планшете слова шума раскладываются заново при каждом открытии:
+     хаотично, но равномерно — каждое новое слово встаёт туда, где от остальных дальше всего,
+     не задевая заголовок, подпись и соседей. На компьютере — места из макета. */
+  var s1title = document.querySelector('.s1__title');
+  var s1hint = document.querySelector('.s1__hint');
+  var placedW = 0;
+  function relRect(el, pad) {
+    var b = el.getBoundingClientRect(), h = hero.getBoundingClientRect();
+    return { l: (b.left - h.left) / unit - pad, t: (b.top - h.top) / unit - pad,
+             r: (b.right - h.left) / unit + pad, b: (b.bottom - h.top) / unit + pad };
+  }
+  function hit(a, b) { return a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b; }
+  function placeHint() {
+    // подпись начинается от левого края первой буквы «ТИШИНЫ» и стоит сразу под словом
+    var rg = document.createRange();
+    rg.selectNodeContents(s1title);
+    var b = rg.getBoundingClientRect(), h = hero.getBoundingClientRect();
+    s1hint.style.left = ((b.left - h.left) / unit).toFixed(1) + 'px';
+    s1hint.style.top = ((b.bottom - h.top) / unit + 4).toFixed(1) + 'px';
+  }
+  function placeWords(force) {
+    if (!mobile) {
+      placedW = 0;
+      s1hint.style.left = s1hint.style.top = '';
+      qs.forEach(function (q) { q.el.style.left = q.l + 'px'; q.el.style.top = q.t + 'px'; });
+      return;
+    }
+    placeHint();
+    if (!force && placedW === DESIGN_W) return; // при прокрутке на телефоне меняется высота окна — не перемешиваем
+    placedW = DESIGN_W;
+    var W = DESIGN_W, H = hero.offsetHeight;
+    var blocks = [relRect(s1title, 16), relRect(s1hint, 14)];
+    var placed = [];
+    qs.slice().sort(function () { return Math.random() - 0.5; }).forEach(function (q) {
+      var w = q.el.offsetWidth, h = q.el.offsetHeight, best = null, bestD = -1;
+      for (var k = 0; k < 80; k++) {
+        var x = 12 + Math.random() * (W - w - 24), y = 70 + Math.random() * (H - h - 100);
+        var r = { l: x, t: y, r: x + w, b: y + h };
+        var near = { l: x - 10, t: y - 8, r: x + w + 10, b: y + h + 8 };
+        if (blocks.some(function (bl) { return hit(r, bl); })) continue;
+        if (placed.some(function (p) { return hit(near, p); })) continue;
+        var cx = x + w / 2, cy = y + h / 2, d = Infinity;
+        placed.concat(blocks).forEach(function (p) {
+          d = Math.min(d, Math.hypot(cx - (p.l + p.r) / 2, (cy - (p.t + p.b) / 2) * 1.5));
+        });
+        if (d > bestD) { bestD = d; best = r; }
       }
+      if (!best) best = { l: 12, t: 70, r: 12 + w, b: 70 + h };
+      q.el.style.left = best.l.toFixed(1) + 'px';
+      q.el.style.top = best.t.toFixed(1) + 'px';
+      placed.push(best);
     });
   }
+
   var mouse = { x: 0, y: 0 };
   window.addEventListener('mousemove', function (e) {
     mouse.x = e.clientX / window.innerWidth - 0.5;
@@ -202,7 +265,7 @@
     if (hiddenAt === null || s4start === null) return;
     var sec = Math.round((Date.now() - hiddenAt) / 1000);
     hiddenAt = null;
-    away.textContent = 'Вас не было ' + sec + ' ' + plural(sec, 'секунду', 'секунды', 'секунд') + '. Что-нибудь пришло?';
+    away.textContent = 'Вас не\u00a0было ' + sec + '\u00a0' + plural(sec, 'секунду', 'секунды', 'секунд') + '. Что-нибудь пришло?';
   });
 
   /* ---------- Контекст: счёт до 15 минут ---------- */
@@ -252,7 +315,7 @@
   var s3 = document.getElementById('s3');
   var STEP = 42.73, K = 0.11;
   var W_D = { CX: 1417.21, CY: 696.27, R: 452.32 };
-  var W_M = { CX: 390, CY: 470, R: 205 };
+  var W_M = { CX: 390, CY: 470, R: 205 }; // на телефоне; на планшете центр — у правого края страницы
   var wheel = $$('.ww').map(function (el) {
     return { el: el, a: parseFloat(el.getAttribute('data-a')), w: 0, h: 0 };
   });
@@ -262,6 +325,7 @@
   var rot = null;
   function tickWheel() {
     var g = mobile ? W_M : W_D;
+    if (mobile) { W_M.CX = DESIGN_W; W_M.R = tablet ? 300 : 205; W_M.CY = tablet ? 560 : 470; }
     var top = s3.getBoundingClientRect().top / unit;
     var target = top * K;               // 0, когда секция вверху окна
     rot = rot === null ? target : rot + (target - rot) * 0.1;
@@ -295,6 +359,42 @@
   var CURVE_LEN = curve.getTotalLength();
   curve.style.strokeDasharray = CURVE_LEN;
   curve.style.strokeDashoffset = CURVE_LEN;
+  /* На телефоне и планшете — та же кривая, только повёрнутая вертикально (x и y меняются местами):
+     она рисуется во всю высоту экрана, точки и фразы загораются прямо на ней */
+  var VB_W = 571.001, VB_H = 1273.59;
+  var MOB_DOTS = [ // центры точек в координатах повёрнутой кривой
+    { x: 237.5, y: 202.5, at: 0.25 },
+    { x: 342.5, y: 384.5, at: 0.45 },
+    { x: 554.5, y: 734.5, at: 0.65 },
+    { x: 1.5,   y: 1060.5, at: 0.90 }
+  ];
+  var mobArt = document.createElement('div');
+  mobArt.className = 's7__mob';
+  mobArt.setAttribute('aria-hidden', 'true');
+  var dMob = curve.getAttribute('d').replace(/(-?[\d.]+) (-?[\d.]+)/g, function (_, x, y) { return y + ' ' + x; });
+  var lblTexts = $$('.s7__img .lbl').map(function (l) { return l.textContent; });
+  var html = '<svg viewBox="0 0 ' + VB_W + ' ' + VB_H + '" fill="none"><path id="curveMob" d="' + dMob + '" stroke="white" stroke-linejoin="round"/></svg>';
+  MOB_DOTS.forEach(function (d, i) {
+    var left = (d.x / VB_W * 100).toFixed(2) + '%', top = (d.y / VB_H * 100).toFixed(2) + '%';
+    var side = d.x < 300 ? 'r' : 'l'; // фраза справа от точки или слева
+    html += '<i class="s7__mdot" data-at="' + d.at + '" style="left:' + left + ';top:' + top + '"></i>';
+    html += '<div class="s7__mlbl s7__mlbl--' + side + (i === 3 ? ' s7__mlbl--last' : '') + '" data-at="' + d.at + '" style="' +
+      (side === 'r' ? 'left:calc(' + left + ' + 16px)' : 'right:calc(' + (100 - d.x / VB_W * 100).toFixed(2) + '% + 16px)') +
+      ';top:' + top + '">' + lblTexts[i] + '</div>';
+  });
+  mobArt.innerHTML = html;
+  curve.closest('.frame').appendChild(mobArt);
+  var curveMob = document.getElementById('curveMob');
+  var CURVE_MOB_LEN = curveMob.getTotalLength();
+  curveMob.style.strokeDasharray = CURVE_MOB_LEN;
+  curveMob.style.strokeDashoffset = CURVE_MOB_LEN;
+  function sizeMobCurve() {
+    // толщина линии — 2px на экране при любом масштабе
+    if (!mobArt || !curveMob) return;
+    var w = mobArt.getBoundingClientRect().width / unit;
+    if (w > 0) curveMob.setAttribute('stroke-width', (2 * VB_W / w).toFixed(2));
+  }
+
   var marks = $$('.s7 [data-at]').map(function (el) {
     return { el: el, at: parseFloat(el.getAttribute('data-at')) };
   });
@@ -305,6 +405,7 @@
     var r7 = s7.getBoundingClientRect();
     hdr.classList.toggle('is-hidden', !mobile && r7.top / unit < 80 && r7.bottom / unit > 80);
     curve.style.strokeDashoffset = (CURVE_LEN * (1 - p)).toFixed(2);
+    curveMob.style.strokeDashoffset = (CURVE_MOB_LEN * (1 - p)).toFixed(2);
     marks.forEach(function (m) { m.el.classList.toggle('on', p >= m.at); });
   }
 
@@ -394,12 +495,15 @@
     nzScreen.style.opacity = (1 - clamp((p - 0.4) / 0.12, 0, 1)).toFixed(3);
     // 3. тёмный экран телефона разрастается до целого экрана
     var g = ease(clamp((p - 0.62) / 0.3, 0, 1));
-    var W = mobile ? 390 : 1440, H = vh;
-    var w0 = mobile ? 170 : 280, h0 = mobile ? 340 : 560;
+    var W = DESIGN_W, H = vh;
+    var w0 = tablet ? 240 : mobile ? 170 : 280, h0 = tablet ? 480 : mobile ? 340 : 560;
     nzPhone.style.width = (w0 + (W + 4 - w0) * g).toFixed(1) + 'px';
     nzPhone.style.height = (h0 + (H + 4 - h0) * g).toFixed(1) + 'px';
     nzPhone.style.borderRadius = ((mobile ? 28 : 44) * (1 - g)).toFixed(1) + 'px';
     nzQuiet.style.opacity = clamp((p - 0.86) / 0.1, 0, 1).toFixed(3);
+    // когда экран телефона заполнил всё окно, чёрное тает и проступает фон сайта —
+    // к моменту, когда экран уезжает, резкой границы чёрного и фона уже нет
+    nzPhone.style.opacity = (1 - clamp((p - 0.9) / 0.1, 0, 1)).toFixed(3);
   }
 
   /* ---------- Мелкие движения складываются в картину ---------- */
@@ -409,7 +513,20 @@
     return { el: el, r: parseFloat(el.getAttribute('data-r')) };
   });
   function tickMoves() {
-    var p = pinProgress(mv);
+    // телефон вертикально: карточки идут лентой, каждая вплывает, когда до неё доходит прокрутка
+    if (feedMode) {
+      var vhPx = window.innerHeight;
+      mvCards.forEach(function (c) {
+        var top = c.el.parentNode.getBoundingClientRect().top; // колонка без сдвига — мерим по ней
+        var k = ease(clamp((vhPx * 0.92 - top) / (vhPx * 0.3), 0, 1));
+        var rot = c.r * (1 - k) + c.r * 0.25;
+        c.el.style.transform = 'translate3d(0,' + ((1 - k) * 60).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg)';
+        c.el.style.opacity = k.toFixed(3);
+      });
+      mvEnd.classList.toggle('on', mvEnd.getBoundingClientRect().top < vhPx * 0.9);
+      return;
+    }
+    var p = lowMode ? 1 : pinProgress(mv); // на низком экране карточки просто стоят списком
     mvCards.forEach(function (c, i) {
       var k = ease(clamp((p - i * 0.13) / 0.22, 0, 1));
       var rot = c.r * (1 - k) + c.r * 0.15;
@@ -449,8 +566,8 @@
     var sec = Math.floor((Date.now() - t0) / 1000);
     var m = Math.floor(sec / 60), s = sec % 60;
     var txt = 'Вы были на\u00a0этой странице ';
-    if (m > 0) txt += m + ' ' + plural(m, 'минуту', 'минуты', 'минут') + ' ';
-    txt += s + ' ' + plural(s, 'секунду', 'секунды', 'секунд') + '. Ответ остался у\u00a0вас.';
+    if (m > 0) txt += m + '\u00a0' + plural(m, 'минуту', 'минуты', 'минут') + ' ';
+    txt += s + '\u00a0' + plural(s, 'секунду', 'секунды', 'секунд') + '. Ответ остался у\u00a0вас.';
     result.textContent = txt;
     clockOn = false;
     clock.classList.add('is-off');
@@ -528,7 +645,7 @@
   if (reduce) root.classList.add('reduce');
   layout();
   window.addEventListener('resize', layout);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layout(); placeWords(true); });
   window.addEventListener('load', placeBlobs);
   requestAnimationFrame(frame);
 })();

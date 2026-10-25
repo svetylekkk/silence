@@ -549,24 +549,27 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 /* =====================================================================
    Телефон: макет 390px (класс .m ставит script.js при ширине < 768)
    ===================================================================== */
-.m { --t-h: 26px; --t-b: 15px; --t-s: 13px; }
-.m .page { width: 390px; }
+/* --mW — ширина страницы на телефоне/планшете, --mx — поле, --mc — ширина текста */
+.m { --t-h: 30px; --t-b: 17px; --t-s: 14px; --mx: 20px; --mc: calc(var(--mW, 390px) - 2 * var(--mx)); }
+.m .page { width: var(--mW); }
 .m .hdr__brand, .m .hdr__clock { top: 22px; }
-.m .hdr__brand { left: 20px; }
-.m .hdr__clock { left: auto; right: 20px; width: auto; }
+.m .hdr__brand { left: var(--mx); }
+.m .hdr__clock { left: auto; right: var(--mx); width: auto; }
 
-.m .frame { width: 390px; height: var(--vh, 100vh); transform: none; }
+.m .frame { width: var(--mW); height: var(--vh, 100vh); transform: none; }
 
 /* 1. Шум */
 .m .s1 { height: var(--vh, 100vh); min-height: 640px; }
-.m .s1__title { left: 20px; top: 36%; width: auto; height: auto; font-size: 60px; }
-.m .s1__hint { left: 20px; top: calc(36% + 90px); }
+/* «ТИШИНА» ровно по центру первого экрана */
+.m .s1__title { left: 50%; top: 50%; width: auto; height: auto; font-size: 60px; transform: translate(-50%, -50%); }
+.m .s1__hint { left: var(--mx); top: 60%; font-size: var(--t-s); } /* точное место ставит script.js */
 
 /* 2. Пауза */
-.m .s4 { height: auto; min-height: var(--vh, 100vh); padding: 120px 20px 100px; }
+/* пауза начинается ближе к середине экрана, а не прижата к верху */
+.m .s4 { --s4top: calc(var(--vh, 800px) * 0.26); height: auto; min-height: var(--vh, 100vh); padding: var(--s4top) var(--mx) 100px; }
 .m .s4 > * { position: relative; left: auto !important; top: auto; width: auto; height: auto; }
 .m .s4__label { letter-spacing: 0; white-space: normal; padding-right: 50px; }
-.m .s4__ring { position: absolute; right: 20px; top: 124px; left: auto !important; }
+.m .s4__ring { position: absolute; right: var(--mx); top: calc(var(--s4top) + 4px); left: auto !important; }
 .m .s4__line { margin-top: 16px; width: 100%; }
 .m .s4__note { margin-top: 14px; }
 .m .s4__num { position: absolute; right: 10px; bottom: 20px; top: auto; font-size: 220px; width: auto; height: auto; }
@@ -576,32 +579,33 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 .m .s4__after, .m .s4__away { margin-top: 24px; }
 
 /* Контекст к паузе */
-.m .s6 { height: auto; padding: 80px 20px; }
+.m .s6 { height: auto; padding: 80px var(--mx); }
 .m .s6__box, .m .s6__left, .m .s6__right { position: static; width: auto; height: auto; }
 .m .s6__num, .m .s6__cap, .m .s6__h, .m .s6__p, .m .s6__line { position: static; width: auto; height: auto; }
 .m .s6__num { font-size: 150px; line-height: 1; }
 .m .s6__cap { margin-top: 8px; white-space: normal; }
 .m .s6__h { margin-top: 56px; white-space: normal; }
 .m .s6__h span { display: inline; }
+.m .s6__h span::after { content: ' '; }
 .m .s6__line { margin: 24px 0; width: 100%; }
 .m .s6__p { }
 
 /* 3. Рука */
 .m .s2 { height: 2000px; }
-.m .s2__text { left: 20px; top: 14%; width: 350px; height: auto; font-size: 25px; line-height: var(--lh); white-space: normal; }
+.m .s2__text { left: var(--mx); top: 14%; width: var(--mc); height: auto; font-size: 28px; line-height: var(--lh); white-space: normal; }
 .m .s2__text .ln { display: inline; }
 
 /* Колесо */
 .m .s3 { height: 760px; }
-.m .s3__h { left: 20px; top: 80px; width: 350px; height: auto; white-space: normal; }
-.m .s3__arc { left: 213px; top: 290px; width: 177px; height: 354px; }
+.m .s3__h { left: var(--mx); top: 80px; width: var(--mc); height: auto; white-space: normal; }
+.m .s3__arc { left: calc(var(--mW, 390px) - 177px); top: 290px; width: 177px; height: 354px; }
 .m .s3__arc-in { width: 354px; height: 177px; }
 .m .ww { font-size: 28px; }
 
 /* Наблюдения — обычный вертикальный список */
 .m .s5 { height: auto; }
 .m .s5 .pin__sticky { position: static; height: auto; display: block; overflow: visible; }
-.m .s5 .frame { height: auto; padding: 80px 20px; }
+.m .s5 .frame { height: auto; padding: 80px var(--mx); }
 .m .s5__h, .m .s5__p, .m .s5__clip, .m .s5__track, .m .card, .m .card p, .m .card--note .cite { position: static; width: auto; height: auto; }
 .m .s5__h { white-space: normal; }
 .m .s5__h span, .m .s5__p span { display: inline; }
@@ -615,11 +619,11 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 
 /* 4. Кривая обещаний */
 .m .s7 { height: 2200px; }
-.m .s7__h { left: 20px; top: 80px; width: 350px; height: auto; white-space: normal; }
+.m .s7__h { left: var(--mx); top: 80px; width: var(--mc); height: auto; white-space: normal; }
 .m .s7__art { position: static; transform: none; width: auto; height: auto; }
 .m .s7__img { display: none; }
-.m .s7__path { left: 20px; top: 190px; width: 350px; height: 157px; }
-.m .s7__list { display: block; position: absolute; left: 20px; top: 390px; width: 350px; list-style: none; }
+.m .s7__path { left: var(--mx); top: 190px; width: var(--mc); height: calc(var(--mc) * 0.4486); }
+.m .s7__list { display: block; position: absolute; left: var(--mx); top: calc(230px + var(--mc) * 0.4486); width: var(--mc); list-style: none; }
 .m .s7__list li {
   font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #f2f2f2; margin-bottom: 22px;
   opacity: 0; transition: opacity 0.5s ease;
@@ -628,23 +632,25 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 .m .s7__list li:last-child { font-weight: 400; }
 
 /* Контекст */
-.m .ctx { padding: 80px 20px 100px; }
+.m .ctx { padding: 80px var(--mx) 100px; }
 .m .ctx__h { }
 .m .ctx__grid { grid-template-columns: 1fr; gap: 40px; margin-top: 40px; }
 .m .ctx__item p { }
 
 /* Лестница */
 .m .s8 { height: 2200px; }
-.m .s8__h { left: 20px; top: 80px; width: 350px; white-space: normal; }
-.m .lad { left: 20px; top: 210px; width: 340px; }
+.m .s8__h { left: var(--mx); top: 80px; width: var(--mc); white-space: normal; }
+.m .lad { left: var(--mx); top: 210px; width: var(--mc); }
 .m .lad__ln { margin-bottom: 18px; }
-.m .s8__end { left: 20px; top: auto; bottom: 70px; width: 350px; }
+/* вывод появляется на месте растаявших фраз */
+.m .s8__end { left: var(--mx); top: 210px; bottom: auto; width: var(--mc); }
 
 /* Сцена */
-.m .scene { padding: 100px 20px 80px; }
+.m .scene { padding: 100px var(--mx) 80px; }
 .m .scene__h { }
 .m .scene__grid { display: flex; flex-direction: column-reverse; gap: 0; margin-top: 40px; }
-.m .scene__side { position: sticky; top: 52px; z-index: 2; background: #000; padding: 10px 0; }
+/* полоса с телефоном мягко уходит в фон снизу, без резкого чёрного края */
+.m .scene__side { position: sticky; top: 52px; z-index: 2; background: linear-gradient(rgba(0, 0, 0, 0.9) 75%, transparent); padding: 10px 0 28px; }
 .m .phone { position: static; width: 100%; height: auto; border-radius: 22px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .m .phone__top { text-align: left; border: 0; padding: 0; }
 .m .phone__name { font-size: 14px; }
@@ -660,7 +666,7 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 .m .mq__text { font-size: 58px; height: 80px; top: 10px !important; }
 
 /* Финал */
-.m .s10 { padding: 120px 20px 50px; }
+.m .s10 { padding: 120px var(--mx) 50px; }
 .m .s10__h { }
 .m .s10__h span { display: inline; }
 .m .s10__h span::after { content: ' '; }
@@ -748,13 +754,13 @@ body.is-quiet .hdr__brand, body.is-quiet .progress { opacity: 0.25; }
 .m .nz__bars i { height: 28px; margin-top: 7px; border-radius: 9px; }
 .m .nz__quiet { font-size: 64px; }
 .m .mv { height: 2200px; }
-.m .mv__h { left: 20px; top: 80px; width: 350px; white-space: normal; display: block; }
+.m .mv__h { left: var(--mx); top: 80px; width: var(--mc); white-space: normal; display: block; }
 .m .mv__h span { display: inline; }
 .m .mv__h span::after { content: ' '; }
-.m .mv__grid { left: 20px; top: 240px; width: 350px; height: auto; display: block; }
+.m .mv__grid { left: var(--mx); top: 240px; width: var(--mc); height: auto; display: block; }
 .m .mv__col { border: 0 !important; }
 .m .mv__card { position: relative; top: auto !important; left: 0; right: 0; margin-bottom: 12px; padding: 12px 14px; }
-.m .mv__end { left: 20px; top: auto; bottom: 57px; width: 350px; }
+.m .mv__end { left: var(--mx); top: auto; bottom: 57px; width: var(--mc); }
 
 /* на телефоне строки текста переносятся свободно, а не по макету */
 .m .s2__text, .m .s5__h, .m .s5__p, .m .s6__h { display: block; }
@@ -801,7 +807,7 @@ html.is-loading .s1__hint { animation-play-state: paused; } /* подпись н
   margin-top: 16px;
   font-weight: 300; font-size: var(--t-s); line-height: var(--lh); color: #8c8c8c;
 }
-.m .ld__bar { width: 350px; max-width: calc(100% - 40px); }
+.m .ld__bar { width: var(--mc); max-width: calc(100% - 2 * var(--mx)); }
 
 /* ===== Курсор-сияние: яркое ядро, лучи и мягкий ореол ===== */
 .cur { display: none; }
@@ -846,3 +852,157 @@ html.has-cur .cur { display: block; }
 .cur.is-hover .cur__glow { width: 140px; height: 140px; margin: -70px 0 0 -70px; }
 .cur.is-hover .cur__rays { scale: 1.35; }
 .reduce .ld__bg i, .reduce .cur__rays { animation: none !important; }
+
+/* =====================================================================
+   Планшет вертикально (768–1023px): одна колонка в реальную ширину,
+   поля 40px, текст 36 / 18 / 14. Класс .t ставит script.js вместе с .m
+   ===================================================================== */
+.t { --t-h: 44px; --t-b: 22px; --t-s: 16px; --mx: 40px; }
+.t .hdr__brand, .t .hdr__clock { top: 32px; }
+.t .hdr::before { height: 72px; }
+
+/* шум и пауза */
+.t .s1__title { font-size: calc(var(--mW) * 0.15); }
+.t .nz { height: 2800px; }
+.t .nz__row { font-size: 96px; }
+.t .nz__screen { width: 240px; height: 480px; }
+.t .nz__time { top: 56px; font-size: 44px; }
+.t .nz__count { top: 170px; font-size: 36px; }
+.t .nz__cap { font-size: 13px; }
+.t .nz__bars { left: 20px; right: 20px; bottom: 40px; }
+.t .nz__bars i { height: 40px; margin-top: 9px; border-radius: 12px; }
+.t .nz__quiet { font-size: 110px; }
+.t .s4 { --s4top: calc(var(--vh, 1100px) * 0.3); }
+.t .s4__ring { top: calc(var(--s4top) + 2px); }
+.t .s4__num { font-size: 320px; right: 30px; }
+.t .s6 { padding: 120px var(--mx); }
+.t .s6__num { font-size: 220px; }
+
+/* рука и колесо */
+.t .s2 { height: 2400px; }
+.t .s2__text { font-size: 44px; top: 16%; }
+.t .s3 { height: 980px; }
+.t .s3__h { top: 100px; }
+.t .s3__arc { left: calc(var(--mW) - 259px); top: 301px; width: 259px; height: 518px; }
+.t .s3__arc-in { width: 518px; height: 259px; }
+.t .ww { font-size: 40px; }
+
+/* наблюдения, кривая, контекст, лестница */
+.t .s5 .frame { padding: 120px var(--mx); }
+.t .s7 { height: 2400px; }
+.t .s7__h { top: 100px; }
+.t .s7__path { top: 230px; }
+.t .s7__list { top: calc(280px + var(--mc) * 0.4486); }
+.t .ctx { padding: 120px var(--mx) 140px; }
+.t .ctx__grid { gap: 48px; margin-top: 56px; }
+.t .s8 { height: 2400px; }
+.t .s8__h { top: 100px; }
+.t .lad { top: 260px; }
+.t .lad__ln { margin-bottom: 24px; }
+.t .s8__end { top: 260px; }
+
+/* сцена, мелкие движения — карточки в две колонки */
+.t .scene { padding: 140px var(--mx) 100px; }
+.t .scene__side { top: 72px; }
+.t .phone__name { font-size: 16px; }
+.t .phone__st { font-size: 13px; }
+.t .phone__msg { font-size: 17px; }
+.t .mv { height: 2400px; }
+.t .mv__h { top: 100px; }
+.t .mv__card { margin-bottom: 0; padding: 16px 18px; }
+
+/* бегущие строки, финал, загрузка */
+.t .mq__row--1, .t .mq__row--2 { height: 150px; }
+.t .mq__text { font-size: 96px; height: 120px; top: 14px !important; }
+.t .s10 { padding: 160px var(--mx) 70px; }
+.t .s10__src-h { margin-top: 160px; }
+.t .ld__bar { width: 640px; }
+.t .s10__foot { flex-direction: row; }
+
+/* ===== Низкий экран (телефон горизонтально, высота меньше 500px) ===== */
+.low .s7__path { display: none; }
+.low .s7__list { top: 150px; }
+.low .mv { height: auto; }
+.low .mv .pin__sticky { position: static; height: auto; display: block; overflow: visible; }
+.low .mv .frame { height: auto; padding: 90px var(--mx) 70px; }
+.low .mv__h, .low .mv__grid, .low .mv__end { position: static; }
+.low .mv__grid { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.low .mv__card { margin: 0; }
+.low .mv__end { margin-top: 24px; }
+
+/* ===== Кривая обещаний на телефоне и планшете: вертикально, во всю высоту экрана ===== */
+.s7__mob { display: none; }
+.m .s7__path, .m .s7__list { display: none; }
+.m .s7__mob {
+  --s7top: calc(80px + 3 * var(--lh-h) * var(--t-h) + 30px);
+  display: block; position: absolute; left: 50%; top: var(--s7top);
+  height: calc(var(--vh, 800px) - var(--s7top) - 40px); aspect-ratio: 571 / 1273.59;
+  transform: translateX(-50%);
+}
+.t .s7__mob { --s7top: calc(100px + 2 * var(--lh-h) * var(--t-h) + 50px); }
+.s7__mob svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.s7__mdot {
+  position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+  background: #fff; box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}
+.t .s7__mdot { width: 20px; height: 20px; margin: -10px 0 0 -10px; }
+.s7__mlbl {
+  position: absolute; transform: translateY(-50%); white-space: pre-line; width: max-content;
+  font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #f2f2f2;
+}
+.s7__mlbl--l { text-align: right; }
+.s7__mlbl--last { font-weight: 400; }
+.s7__mdot, .s7__mlbl { opacity: 0; transition: opacity 0.4s ease; }
+.s7__mdot.on, .s7__mlbl.on { opacity: 1; }
+.low .s7__mob { display: none; }
+.low .s7__list { display: block; }
+
+/* ===== «Ожидание не видно со стороны» на телефоне и планшете: карточки разбросаны и падают на место ===== */
+.m .mv__grid {
+  --mvtop: calc(80px + 3 * var(--lh-h) * var(--t-h) + 30px);
+  --mvh: calc(var(--vh, 800px) - var(--mvtop) - 110px);
+  top: var(--mvtop); height: var(--mvh); display: block;
+}
+.t .mv__grid { --mvtop: calc(100px + 2 * var(--lh-h) * var(--t-h) + 50px); display: block; }
+.m .mv__col { position: static; }
+.m .mv__card {
+  position: absolute; width: 74%; margin: 0;
+  top: calc((var(--mvh) - 110px) / 4 * var(--i)) !important;
+}
+.t .mv__card { width: 66%; top: calc((var(--mvh) - 130px) / 4 * var(--i)) !important; }
+.m .mv__col:nth-child(1) .mv__card { --i: 0; left: 0; right: auto; }
+.m .mv__col:nth-child(2) .mv__card { --i: 1; left: auto; right: 0; }
+.m .mv__col:nth-child(3) .mv__card { --i: 2; left: 8%; right: auto; }
+.m .mv__col:nth-child(4) .mv__card { --i: 3; left: auto; right: 4%; }
+.m .mv__col:nth-child(5) .mv__card { --i: 4; left: 2%; right: auto; }
+.m .mv__end { top: calc(var(--vh, 800px) - 90px); bottom: auto; }
+.low .mv__grid { height: auto; }
+.low .mv__card { position: static; width: auto; top: auto !important; }
+
+/* ===== Телефон вертикально: карточки жестов лентой, без наложения ===== */
+.feed .mv { height: auto; }
+.feed .mv .pin__sticky { position: static; height: auto; display: block; overflow: visible; }
+.feed .mv .frame { height: auto; padding: 100px var(--mx) 80px; }
+.feed .mv__h, .feed .mv__grid, .feed .mv__end { position: static; }
+.feed .mv__grid { height: auto; margin-top: 36px; }
+.feed .mv__col { margin-bottom: 22px; }
+.feed .mv__card { position: relative; top: auto !important; width: 78%; }
+.feed .mv__col:nth-child(odd) .mv__card { left: 0; right: auto; }
+.feed .mv__col:nth-child(even) .mv__card { left: 22%; right: auto; }
+.feed .mv__end { margin-top: 36px; }
+
+/* ===== Планшет: композиции по середине экрана по высоте ===== */
+.t .s4 { --s4top: calc((var(--vh, 1100px) - 400px) / 2); }
+.t .s2__text { top: 50%; transform: translateY(-50%); }
+.t .s8__h { top: calc(50% - 170px); }
+.t .lad, .t .s8__end { top: calc(50% - 10px); }
+
+/* ===== «Вы ждёте ответа»: телефон — размытое стекло без чёрной подложки ===== */
+.m .scene__side { background: none; padding: 10px 0; }
+.m .phone {
+  background: rgba(30, 30, 30, 0.28);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-color: rgba(242, 242, 242, 0.35);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.06);
+}
+.m .phone__msg { border-color: rgba(242, 242, 242, 0.6); }
