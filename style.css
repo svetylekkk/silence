@@ -950,6 +950,8 @@ html.has-cur .cur { display: block; }
   font-weight: 300; font-size: var(--t-b); line-height: var(--lh); color: #f2f2f2;
 }
 .s7__mlbl--last { font-weight: 400; }
+.m .s7__mlbl { font-size: 15px; }
+.t .s7__mlbl { font-size: 19px; }
 .s7__mdot, .s7__mlbl { opacity: 0; transition: opacity 0.4s ease; }
 .s7__mdot.on, .s7__mlbl.on { opacity: 1; }
 .low .s7__mob { display: none; }

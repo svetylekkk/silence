@@ -404,22 +404,35 @@
       var x = d.x * sx, y = d.y * sy, el = mobLbls[i];
       mobDots[i].style.left = x + 'px';
       mobDots[i].style.top = y + 'px';
-      var w = el.offsetWidth, h = el.offsetHeight, g = 16;
-      var cands = [
-        [x + g, y - h / 2, 'l'], [x - g - w, y - h / 2, 'r'],
-        [x + g, y + 10, 'l'], [x - g - w, y + 10, 'r'],
-        [x + g, y - h - 10, 'l'], [x - g - w, y - h - 10, 'r'],
-        [x + g, y + h * 0.6 + 20, 'l'], [x - g - w, y + h * 0.6 + 20, 'r']
-      ];
-      var best = null;
-      for (var c = 0; c < cands.length && !best; c++) {
-        var r = { l: cands[c][0], t: cands[c][1], r: cands[c][0] + w, b: cands[c][1] + h };
-        if (r.l < -2 || r.r > W + 2 || r.t < -h) continue;
-        var touches = pts.some(function (p) { return p.x > r.l - 8 && p.x < r.r + 8 && p.y > r.t - 6 && p.y < r.b + 6; });
-        var crowds = placed.some(function (q) { return r.l < q.r + 6 && q.l < r.r + 6 && r.t < q.b + 6 && q.t < r.b + 6; });
-        if (!touches && !crowds) best = { r: r, a: cands[c][2] };
+      var w = el.offsetWidth, h = el.offsetHeight, g = 18;
+      // «подтверждения, что я нужен» — чуть ниже и правее остальных
+      if (i === 2) { x += 22; y += 26; }
+      // перебираем места вокруг точки: берём ближайшее, где до линии и соседних фраз не меньше 14px,
+      // а если на низком экране такого нет — самое свободное
+      var best = null, bestScore = -1e9;
+      for (var dy = -2.2 * h; dy <= 2.2 * h; dy += 4) {
+        for (var side = 0; side < 2; side++) {
+          for (var dx = 0; dx <= 60; dx += 6) {
+            var l = side ? x - g - w - dx : x + g + dx, t = y + dy;
+            if (i === 2 && (side === 0 || dy < 0)) continue; // эта фраза — ниже и левее своей точки
+            if (l < 0 || l + w > W || t < -20 || t + h > H + 20) continue;
+            var clear = 1e9;
+            for (var k2 = 0; k2 < pts.length; k2++) {
+              var p2 = pts[k2];
+              var ex = Math.max(l - p2.x, 0, p2.x - l - w), ey = Math.max(t - p2.y, 0, p2.y - t - h);
+              clear = Math.min(clear, Math.sqrt(ex * ex + ey * ey));
+            }
+            placed.forEach(function (q) {
+              var ex = Math.max(l - q.r, 0, q.l - l - w), ey = Math.max(t - q.b, 0, q.t - t - h);
+              clear = Math.min(clear, Math.sqrt(ex * ex + ey * ey));
+            });
+            var near = Math.abs(dy + h / 2) + dx;
+            var score = clear >= 14 ? 1000 - near : clear;
+            if (score > bestScore) { bestScore = score; best = { r: { l: l, t: t }, a: side ? 'r' : 'l' }; }
+          }
+        }
       }
-      if (!best) best = { r: { l: Math.min(x + g, W - w), t: y - h / 2, r: 0, b: 0 }, a: 'l' };
+      if (!best) best = { r: { l: Math.max(0, Math.min(x + g, W - w)), t: y - h / 2 }, a: 'l' };
       el.style.left = best.r.l.toFixed(1) + 'px';
       el.style.top = best.r.t.toFixed(1) + 'px';
       el.style.textAlign = best.a === 'r' ? 'right' : 'left';
