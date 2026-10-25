@@ -933,12 +933,17 @@ html.has-cur .cur { display: block; }
 /* ===== Кривая обещаний на телефоне и планшете: вертикально, во всю высоту экрана ===== */
 .s7__mob { display: none; }
 .m .s7__path, .m .s7__list { display: none; }
+.m .s7 { --s7top: calc(80px + 3 * var(--lh-h) * var(--t-h) + 30px); }
+.t .s7 { --s7top: calc(100px + 2 * var(--lh-h) * var(--t-h) + 50px); }
+/* кривая в настоящих пропорциях (высота = ширина × 2,23) — длиннее экрана, поэтому экран не закрепляется,
+   а прокручивается вместе с ней */
+.m:not(.low) .s7 { height: calc(var(--s7top) + var(--mc) * 2.2305 + 140px); }
+.m:not(.low) .s7 .pin__sticky { position: relative; height: 100%; }
+.m:not(.low) .s7 .frame { height: 100%; }
 .m .s7__mob {
-  --s7top: calc(80px + 3 * var(--lh-h) * var(--t-h) + 30px);
   display: block; position: absolute; left: var(--mx); width: var(--mc); top: var(--s7top);
-  height: calc(var(--vh, 800px) - var(--s7top) - 40px);
+  height: calc(var(--mc) * 2.2305);
 }
-.t .s7__mob { --s7top: calc(100px + 2 * var(--lh-h) * var(--t-h) + 50px); }
 .s7__mob svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .s7__mdot {
   position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;

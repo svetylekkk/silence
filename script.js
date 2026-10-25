@@ -83,7 +83,7 @@
   /* На телефоне и планшете кривая и карточки встают ровно под заголовком, сколько бы строк он ни занял */
   function placeUnderHeadings() {
     var gap = tablet ? 50 : 30;
-    [['.s7__h', '.s7__mob', '--s7top'], ['.mv__h', '.mv__grid', '--mvtop']].forEach(function (x) {
+    [['.s7__h', '#s7', '--s7top'], ['.mv__h', '.mv__grid', '--mvtop']].forEach(function (x) {
       var h = document.querySelector(x[0]), el = document.querySelector(x[1]);
       if (!h || !el) return;
       if (mobile) el.style.setProperty(x[2], (h.offsetTop + h.offsetHeight + gap) + 'px');
@@ -416,6 +416,7 @@
   var curveMob = document.getElementById('curveMob');
   var mobDots = $$('.s7__mdot'), mobLbls = $$('.s7__mlbl');
   var CURVE_MOB_LEN = 1;
+  var mobPtsY = []; // высота каждой из 240 точек кривой — по ним считаем, докуда она нарисована
   function sizeMobCurve() {
     if (!mobArt || !curveMob || !mobile) return;
     var W = mobArt.offsetWidth, H = mobArt.offsetHeight;
@@ -430,6 +431,7 @@
     // точки кривой — чтобы проверять, не задевает ли фраза линию
     var pts = [];
     for (var i = 0; i <= 240; i++) pts.push(curveMob.getPointAtLength(CURVE_MOB_LEN * i / 240));
+    mobPtsY = pts.map(function (pt) { return pt.y; });
     var placed = [];
     MOB_DOTS.forEach(function (d, i) {
       var x = d.x * sx, y = d.y * sy, el = mobLbls[i];
@@ -477,6 +479,13 @@
   var hdr = document.querySelector('.hdr');
   function tickCurve() {
     var p = pinProgress(s7);
+    // на телефоне и планшете экран не закреплён: кривая длиннее экрана и дорисовывается по мере прокрутки —
+    // её кончик идёт по линии на 70% высоты окна
+    if (mobile && !lowMode && mobPtsY.length) {
+      var lim = (window.innerHeight * 0.7 - rect(mobArt).top) / unit, n = 0;
+      while (n < mobPtsY.length && mobPtsY[n] <= lim) n++;
+      p = n / mobPtsY.length;
+    }
     // заголовок экрана стоит под шапкой — убираем шапку, пока экран закреплён
     var r7 = rect(s7);
     hdr.classList.toggle('is-hidden', !mobile && r7.top / unit < 80 && r7.bottom / unit > 80);
@@ -715,7 +724,7 @@
   function wake() { active = 120; }
   window.addEventListener('mousemove', wake, { passive: true });
   // заранее измеряем всё, что понадобится в кадре: так браузер считает раскладку один раз, а не после каждой записи
-  var measured = [hero, s2, s3, s5, s7, s8, sceneSec, nz, mv, mvEnd].concat(quietZones, sceneP, mvCards.map(function (c) { return c.el.parentNode; }));
+  var measured = [hero, s2, s3, s5, s7, mobArt, s8, sceneSec, nz, mv, mvEnd].concat(quietZones, sceneP, mvCards.map(function (c) { return c.el.parentNode; }));
   function frame() {
     var y = window.scrollY;
     if (y !== lastY) { lastY = y; wake(); }
