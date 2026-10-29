@@ -1047,3 +1047,65 @@ html.has-cur .cur { display: block; }
 .m .hdr__brand, .m .hdr__clock { top: 18px; }
 .t .hdr::before { height: 84px; }
 .t .hdr__brand, .t .hdr__clock { top: 26px; }
+
+/* ===== Веб-ринг курса ===== */
+.course-webring {
+  position: relative; margin-top: 64px; padding: 24px 0 0; width: 1280px;
+  border-top: 1px solid #f2f2f2; color: #f2f2f2;
+  font-family: Inter, sans-serif; font-size: 16px; line-height: 1.5;
+}
+.course-webring h2 { margin: 0 0 16px; font-family: Inter, sans-serif; font-size: 20px; font-weight: 600; line-height: 1.3; }
+.course-webring__nav { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px 24px; align-items: start; }
+.course-webring__nav a { display: flex; align-items: center; min-height: 44px; padding: 10px 0; box-sizing: border-box; color: inherit; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.course-webring__nav a:last-child { justify-content: flex-end; text-align: right; }
+.course-webring__nav a:hover { color: #fff; }
+.course-webring a:focus-visible, .ring-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+/* кнопка, которая включает стрелки */
+.ring-btn {
+  display: block; margin-top: 24px; min-height: 52px; padding: 12px 24px; box-sizing: border-box;
+  border: 1px solid #f2f2f2; background: transparent; color: #f2f2f2;
+  font-family: Inter, sans-serif; font-size: 16px; line-height: 1.4; text-align: center; cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.ring-btn:hover, .ring-btn[aria-pressed="true"] { background: #f2f2f2; color: #000; }
+/* стрелки у краёв экрана, по высоте блока веб-ринга; до нажатия кнопки скрыты */
+.ring-arrow {
+  position: absolute; top: 50%; display: flex; align-items: center; gap: 14px;
+  color: #f2f2f2; text-decoration: none; font-family: Inter, sans-serif; font-size: 14px; line-height: 1.3;
+  opacity: 0; visibility: hidden; transition: opacity 0.5s ease, transform 0.5s ease, visibility 0.5s;
+}
+.ring-arrow--prev { left: -74px; transform: translate(-20px, -50%); }
+.ring-arrow--next { right: -74px; transform: translate(20px, -50%); flex-direction: row; text-align: right; }
+.ring-on .ring-arrow { opacity: 1; visibility: visible; transform: translate(0, -50%); }
+.ring-arrow__i {
+  flex: none; display: flex; align-items: center; justify-content: center;
+  width: 60px; height: 60px; border-radius: 50%; border: 1px solid #f2f2f2;
+  background: rgba(0, 0, 0, 0.55); font-size: 24px; transition: background 0.3s ease, color 0.3s ease;
+}
+.ring-arrow:hover .ring-arrow__i { background: #f2f2f2; color: #000; }
+/* подпись к стрелке показывается при наведении */
+.ring-arrow__t {
+  position: absolute; top: 50%; width: max-content; max-width: 260px; padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.8); border: 1px solid #3a3a3a;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+}
+.ring-arrow--prev .ring-arrow__t { left: 74px; transform: translateY(-50%); }
+.ring-arrow--next .ring-arrow__t { right: 74px; transform: translateY(-50%); }
+.ring-arrow:hover .ring-arrow__t, .ring-arrow:focus-visible .ring-arrow__t { opacity: 1; }
+
+/* телефон и планшет: блок во всю ширину, стрелки — у краёв экрана под кнопкой */
+.m .course-webring { width: 100%; }
+.m .ring-btn { width: 100%; }
+.m .ring-arrow { top: auto; bottom: 18px; gap: 10px; transform: translateY(10px); }
+.m .ring-on .ring-arrow { transform: none; }
+.m .ring-arrow--prev { left: calc(-1 * var(--mx) + 12px); }
+.m .ring-arrow--next { right: calc(-1 * var(--mx) + 12px); }
+.m .ring-arrow__i { width: 52px; height: 52px; font-size: 22px; }
+.m .ring-arrow__t { position: static; transform: none; opacity: 1; background: none; border: 0; padding: 0; max-width: 112px; font-size: 13px; color: #8c8c8c; }
+.m .ring-arrow--prev .ring-arrow__t, .m .ring-arrow--next .ring-arrow__t { transform: none; }
+.m .course-webring { padding-bottom: 0; transition: padding-bottom 0.5s ease; }
+.m .ring-on .course-webring { padding-bottom: 100px; }
+@media (max-width: 720px) {
+  .course-webring__nav { grid-template-columns: 1fr; }
+  .course-webring__nav a:last-child { justify-content: flex-start; text-align: left; }
+}
