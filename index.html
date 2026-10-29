@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@200;300;400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
-  <link rel="stylesheet" href="style.css?v=20261029a">
+  <link rel="stylesheet" href="style.css?v=20261030a">
 </head>
 <body>
 
@@ -340,15 +340,15 @@
         <span>Сафронова Светлана</span>
       </div>
 
-      <!-- Веб-ринг курса: блок всегда виден, кнопка дополнительно включает стрелки у краёв -->
+      <!-- Веб-ринг курса: ссылки на соседние работы; кнопка показывает стрелки у краёв -->
       <footer class="course-webring" id="webring">
-        <h2>Веб-ринг</h2>
+        <h2 class="sr-only">Веб-ринг</h2>
         <nav class="course-webring__nav" aria-label="Веб-ринг проектов">
           <a target="_top" href="https://longgrid-hse-2c1m.vercel.app/" rel="prev">← Кто открыл чемодан? — Диана Спиридонова</a>
           <a target="_top" href="https://conclaveobscurum.ru/soyalice/">Все проекты</a>
           <a target="_top" href="https://mathewhimself.github.io/Hedonizm/" rel="next">Hedonism — бери от жизни больше — Матвей Епураш →</a>
         </nav>
-        <button class="ring-btn" id="ringBtn" type="button" aria-pressed="false" aria-controls="ringPrev ringNext">Посмотреть лонгриды других участников The Black Parade</button>
+        <div class="ring-row"><button class="ring-btn" id="ringBtn" type="button" aria-pressed="false" aria-controls="ringPrev ringNext">Посмотреть лонгриды других участников</button></div>
         <a class="ring-arrow ring-arrow--prev" id="ringPrev" target="_top" href="https://longgrid-hse-2c1m.vercel.app/" rel="prev" aria-label="Предыдущая работа: Кто открыл чемодан? — Диана Спиридонова" tabindex="-1"><span class="ring-arrow__i">←</span><span class="ring-arrow__t">Кто открыл чемодан?<br>Диана Спиридонова</span></a>
         <a class="ring-arrow ring-arrow--next" id="ringNext" target="_top" href="https://mathewhimself.github.io/Hedonizm/" rel="next" aria-label="Следующая работа: Hedonism — бери от жизни больше — Матвей Епураш" tabindex="-1"><span class="ring-arrow__t">Hedonism — бери от жизни больше<br>Матвей Епураш</span><span class="ring-arrow__i">→</span></a>
       </footer>
@@ -356,6 +356,6 @@
 
   </div>
 
-  <script src="script.js?v=20261029a"></script>
+  <script src="script.js?v=20261030a"></script>
 </body>
 </html>

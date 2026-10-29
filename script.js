@@ -665,13 +665,12 @@
     submit.disabled = true;
   });
 
-  /* ---------- Веб-ринг: кнопка в подвале включает стрелки к соседним лонгридам ---------- */
+  /* ---------- Веб-ринг: кнопка в подвале показывает стрелки к соседним лонгридам ---------- */
   var ringBtn = document.getElementById('ringBtn');
   if (ringBtn) ringBtn.addEventListener('click', function () {
     var on = document.body.classList.toggle('ring-on');
     ringBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
     $$('.ring-arrow').forEach(function (a) { a.tabIndex = on ? 0 : -1; });
-    setTimeout(function () { if (typeof placeBlobs === 'function') placeBlobs(); }, 550); // высота страницы могла измениться
   });
 
   /* ---------- Загрузка: от 0 до 100% примерно за 2,5 секунды ---------- */
